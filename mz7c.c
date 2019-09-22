@@ -269,32 +269,32 @@ unsigned char *compress(Optimal *optimal, unsigned char *input_data, size_t inpu
 /*- MZF specifics -------------------------------------------*/
 
 typedef struct header_t {
-	unsigned char file_attribute;
-	char file_name[17];
-	unsigned short file_size; 
-	unsigned short file_load; 
-	unsigned short file_exec;
-	char comment[104];
+    unsigned char file_attribute;
+    char file_name[17];
+    unsigned short file_size; 
+    unsigned short file_load; 
+    unsigned short file_exec;
+    char comment[104];
 } Header;
 
 void fill_header_and_loader(Header *header, char *loader, size_t skip, size_t output_size, int backwards_mode, long delta) {
-	unsigned short original_size = header->file_size;
-	unsigned short original_load = header->file_load;
-	unsigned short original_exec = header->file_exec;
-	char *memory = header->comment - 0x1108;
-	size_t loader_size = 0x15;  
-	
-	printf(
-		"[Old file] size: %5d (%04x), load: %04x, exec: %04x\n",
-		original_size, original_size, 
-		original_load, 
-		original_exec);
-		
-	if (backwards_mode) {
-		memcpy(
-			header->comment,
-			/*
-0000                    ORG 	0x1108
+    unsigned short original_size = header->file_size;
+    unsigned short original_load = header->file_load;
+    unsigned short original_exec = header->file_exec;
+    char *memory = header->comment - 0x1108;
+    size_t loader_size = 0x15;  
+    
+    printf(
+        "[Old file] size: %5d (%04x), load: %04x, exec: %04x\n",
+        original_size, original_size, 
+        original_load, 
+        original_exec);
+        
+    if (backwards_mode) {
+        memcpy(
+            header->comment,
+            /*
+0000                    ORG     0x1108
 1108                    ; -----------------------------------------------------------------------------
 1108                    ; ZX7 decoder by Einar Saukas & Urusergi
 1108                    ; "Turbo" version (88 bytes, 25% faster) - BACKWARDS VARIANT
@@ -304,10 +304,10 @@ void fill_header_and_loader(Header *header, char *loader, size_t skip, size_t ou
 1108                    ;   DE: last destination address (decompressing)
 1108                    ; -----------------------------------------------------------------------------
 1108                    _main:
-1108 */"\x21\x00\x00"/*         ld      hl, $0000                   ; last source address
-110B */"\x11\x00\x00"/*         ld      de, $0000                   ; last target address
-110E */"\x01\xAD\x00"/*   		ld		bc, $00AD                   ; executable address
-1111 */"\xC5"        /*   		push	bc
+1108 */"\x21\x00\x00"/*         ld      hl, $0000                  ; last source address
+110B */"\x11\x00\x00"/*         ld      de, $0000                  ; last target address
+110E */"\x01\xAD\x00"/*         ld      bc, $00AD                  ; executable address
+1111 */"\xC5"        /*         push    bc
 1112                    dzx7_turbo_back:
 1112 */"\x3E\x80"    /*         ld      a, $80
 1114                    dzx7t_copy_byte_loop_b:
@@ -379,59 +379,59 @@ void fill_header_and_loader(Header *header, char *loader, size_t skip, size_t ou
 1169 */"\xC9"        /*         ret
 116A
 116A                    ; -----------------------------------------------------------------------------
-			*/,
-			0x116A-0x1108
-		);
+            */,
+            0x116A-0x1108
+        );
 
-		/*
-			   header	compressed data   loader
-		     |--------|-----------------|--------|
-				   header           decompressed data            suffix
-			     |--------|---------------------------------|--------------|
-										               << start
-			          <--->			                        <-------------->                                 
-					  delta			                              skip
-		*/
+        /*
+               header   compressed data   loader
+             |--------|-----------------|--------|
+                   header           decompressed data            suffix
+                 |--------|---------------------------------|--------------|
+                                                       << start
+                      <--->                                 <-------------->                                 
+                      delta                                       skip
+        */
 
-		original_size -= skip;
-		
-		header->file_size = output_size + loader_size;
-		header->file_load = original_load - delta;		
-		header->file_exec = header->file_load + output_size;
-		
-		*((unsigned short*)(memory+0x1109)) = original_load - delta + output_size-1;
-		*((unsigned short*)(memory+0x110C)) = original_load + original_size-1;
-		*((unsigned short*)(memory+0x110F)) = original_exec;	
-		
-		loader[0x00] = 0x21;					// 01 xx xx        	ld		hl,$xxxx
-		loader[0x01] = (original_size >> 0) & 255;
-		loader[0x02] = (original_size >> 8) & 255;
-		loader[0x03] = 0x22;					// 22 xx xx        	ld		($1102),hl
-		loader[0x04] = 0x02;
-		loader[0x05] = 0x11;
+        original_size -= skip;
+        
+        header->file_size = output_size + loader_size;
+        header->file_load = original_load - delta;      
+        header->file_exec = header->file_load + output_size;
+        
+        *((unsigned short*)(memory+0x1109)) = original_load - delta + output_size-1;
+        *((unsigned short*)(memory+0x110C)) = original_load + original_size-1;
+        *((unsigned short*)(memory+0x110F)) = original_exec;    
+        
+        loader[0x00] = 0x21;                    // 01 xx xx         ld      hl,$xxxx
+        loader[0x01] = (original_size >> 0) & 255;
+        loader[0x02] = (original_size >> 8) & 255;
+        loader[0x03] = 0x22;                    // 22 xx xx         ld      ($1102),hl
+        loader[0x04] = 0x02;
+        loader[0x05] = 0x11;
 
-		loader[0x06] = 0x21;					// 01 xx xx        	ld		hl,$xxxx
-		loader[0x07] = (original_load >> 0) & 255;
-		loader[0x08] = (original_load >> 8) & 255;
-		loader[0x09] = 0x22;					// 22 xx xx        	ld		($1104),hl
-		loader[0x0A] = 0x04;
-		loader[0x0B] = 0x11;
+        loader[0x06] = 0x21;                    // 01 xx xx         ld      hl,$xxxx
+        loader[0x07] = (original_load >> 0) & 255;
+        loader[0x08] = (original_load >> 8) & 255;
+        loader[0x09] = 0x22;                    // 22 xx xx         ld      ($1104),hl
+        loader[0x0A] = 0x04;
+        loader[0x0B] = 0x11;
 
-		loader[0x0C] = 0x21;					// 01 xx xx        	ld		h,$xxxx
-		loader[0x0D] = (original_exec >> 0) & 255;
-		loader[0x0E] = (original_exec >> 8) & 255;
-		loader[0x0F] = 0x22;					// 22 xx xx        	ld		($1106),hl
-		loader[0x10] = 0x06;
-		loader[0x11] = 0x11;
+        loader[0x0C] = 0x21;                    // 01 xx xx         ld      h,$xxxx
+        loader[0x0D] = (original_exec >> 0) & 255;
+        loader[0x0E] = (original_exec >> 8) & 255;
+        loader[0x0F] = 0x22;                    // 22 xx xx         ld      ($1106),hl
+        loader[0x10] = 0x06;
+        loader[0x11] = 0x11;
 
-		loader[0x12] = 0xC3;					// C3 08 11        	jp		0x1108
-		loader[0x13] = 0x08;
-		loader[0x14] = 0x11;
-	} else {
-		memcpy(
-			header->comment,
-			/*
-0000                    ORG 	0x1108
+        loader[0x12] = 0xC3;                    // C3 08 11         jp      0x1108
+        loader[0x13] = 0x08;
+        loader[0x14] = 0x11;
+    } else {
+        memcpy(
+            header->comment,
+            /*
+0000                    ORG     0x1108
 1108                    ; -----------------------------------------------------------------------------
 1108                    ; ZX7 decoder by Einar Saukas & Urusergi
 1108                    ; "Turbo" version (88 bytes, 25% faster) - BACKWARDS VARIANT
@@ -441,10 +441,10 @@ void fill_header_and_loader(Header *header, char *loader, size_t skip, size_t ou
 1108                    ;   DE: last destination address (decompressing)
 1108                    ; -----------------------------------------------------------------------------
 1108                    _main:
-1108 */"\x21\x00\x00"/*         ld      hl, $0000                   ; last source address
-110B */"\x11\x00\x00"/*         ld      de, $0000                   ; last target address
-110E */"\x01\xAD\x00"/*   		ld		bc, $00AD                   ; executable address
-1111 */"\xC5"        /*   		push	bc
+1108 */"\x21\x00\x00"/*         ld      hl, $0000                  ; last source address
+110B */"\x11\x00\x00"/*         ld      de, $0000                  ; last target address
+110E */"\x01\xAD\x00"/*         ld      bc, $00AD                  ; executable address
+1111 */"\xC5"        /*         push    bc
 1112                    dzx7_turbo_back:
 1112 */"\x3E\x80"    /*         ld      a, $80
 1114                    dzx7t_copy_byte_loop:
@@ -516,65 +516,65 @@ void fill_header_and_loader(Header *header, char *loader, size_t skip, size_t ou
 1169 */"\xC9"        /*         ret
 116A
 116A                    ; -----------------------------------------------------------------------------
-			*/,
-			0x116A-0x1108
-		);
-	
-		/*
-										   header	loader   compressed data
-									     |--------|--------|-----------------|
-				 header      prefix             decompressed data
-			   |--------|--------------|---------------------------------|
-										start >>
-						<-------------->                                 <--->
-							  skip                                       delta
-		*/
+            */,
+            0x116A-0x1108
+        );
+    
+        /*
+                                           header   loader   compressed data
+                                         |--------|--------|-----------------|
+                 header      prefix             decompressed data
+               |--------|--------------|---------------------------------|
+                                        start >>
+                        <-------------->                                 <--->
+                              skip                                       delta
+        */
 
-		original_size -= skip;
-		original_load += skip;
-		
-		if (delta < loader_size) {
-			delta = loader_size;
-		}
-		
-		header->file_size = loader_size + output_size;
-		header->file_load = original_load + original_size + delta - header->file_size;		
-		header->file_exec = header->file_load;
-		
-		*((unsigned short*)(memory+0x1109)) = original_load + original_size + delta - output_size;
-		*((unsigned short*)(memory+0x110C)) = original_load;
-		*((unsigned short*)(memory+0x110F)) = original_exec;
-		
-		loader[0x00] = 0x21;					// 01 xx xx        	ld		hl,$xxxx
-		loader[0x01] = (original_size >> 0) & 255;
-		loader[0x02] = (original_size >> 8) & 255;
-		loader[0x03] = 0x22;					// 22 xx xx        	ld		($1102),hl
-		loader[0x04] = 0x02;
-		loader[0x05] = 0x11;
+        original_size -= skip;
+        original_load += skip;
+        
+        if (delta < loader_size) {
+            delta = loader_size;
+        }
+        
+        header->file_size = loader_size + output_size;
+        header->file_load = original_load + original_size + delta - header->file_size;      
+        header->file_exec = header->file_load;
+        
+        *((unsigned short*)(memory+0x1109)) = original_load + original_size + delta - output_size;
+        *((unsigned short*)(memory+0x110C)) = original_load;
+        *((unsigned short*)(memory+0x110F)) = original_exec;
+        
+        loader[0x00] = 0x21;                    // 01 xx xx         ld      hl,$xxxx
+        loader[0x01] = (original_size >> 0) & 255;
+        loader[0x02] = (original_size >> 8) & 255;
+        loader[0x03] = 0x22;                    // 22 xx xx         ld      ($1102),hl
+        loader[0x04] = 0x02;
+        loader[0x05] = 0x11;
 
-		loader[0x06] = 0x21;					// 01 xx xx        	ld		hl,$xxxx
-		loader[0x07] = (original_load >> 0) & 255;
-		loader[0x08] = (original_load >> 8) & 255;
-		loader[0x09] = 0x22;					// 22 xx xx        	ld		($1104),hl
-		loader[0x0A] = 0x04;
-		loader[0x0B] = 0x11;
+        loader[0x06] = 0x21;                    // 01 xx xx         ld      hl,$xxxx
+        loader[0x07] = (original_load >> 0) & 255;
+        loader[0x08] = (original_load >> 8) & 255;
+        loader[0x09] = 0x22;                    // 22 xx xx         ld      ($1104),hl
+        loader[0x0A] = 0x04;
+        loader[0x0B] = 0x11;
 
-		loader[0x0C] = 0x21;					// 01 xx xx        	ld		h,$xxxx
-		loader[0x0D] = (original_exec >> 0) & 255;
-		loader[0x0E] = (original_exec >> 8) & 255;
-		loader[0x0F] = 0x22;					// 22 xx xx        	ld		($1106),hl
-		loader[0x10] = 0x06;
-		loader[0x11] = 0x11;
+        loader[0x0C] = 0x21;                    // 01 xx xx         ld      h,$xxxx
+        loader[0x0D] = (original_exec >> 0) & 255;
+        loader[0x0E] = (original_exec >> 8) & 255;
+        loader[0x0F] = 0x22;                    // 22 xx xx         ld      ($1106),hl
+        loader[0x10] = 0x06;
+        loader[0x11] = 0x11;
 
-		loader[0x12] = 0xC3;					// C3 08 11        	jp		0x1108
-		loader[0x13] = 0x08;
-		loader[0x14] = 0x11;
-	}
+        loader[0x12] = 0xC3;                    // C3 08 11         jp      0x1108
+        loader[0x13] = 0x08;
+        loader[0x14] = 0x11;
+    }
 
-	printf(
-		"[New file] size: %5d (%04x), load: %04x, exec: %04x\n",
-		header->file_size, header->file_size, 
-		header->file_load, header->file_exec);	
+    printf(
+        "[New file] size: %5d (%04x), load: %04x, exec: %04x\n",
+        header->file_size, header->file_size, 
+        header->file_load, header->file_exec);  
 }
 
 /*- zx7.c (modified to compress MZF into MZ7 ----------------*/
@@ -613,7 +613,7 @@ int main(int argc, char *argv[]) {
     size_t total_counter;
     long delta;
     int i;
-	char loader_data[0x15];
+    char loader_data[0x15];
 
     /* process hidden optional parameters */
     for (i = 1; i < argc && (*argv[i] == '-' || *argv[i] == '+'); i++) {
@@ -642,7 +642,7 @@ int main(int argc, char *argv[]) {
     } else if (argc == i+2) {
         output_name = argv[i+1];
     } else {
-		fprintf(stderr, "mz7c: using optimal LZ77/LZSS compression by Einar Saukas\n");
+        fprintf(stderr, "mz7c: using optimal LZ77/LZSS compression by Einar Saukas\n");
         fprintf(stderr, "Usage: %s [-f] [-b] input.mzf [output.mz7]\n"
                         "  -f      Force overwrite of output file\n"
                         "  -b      Compress backwards\n", argv[0]);
@@ -710,38 +710,38 @@ int main(int argc, char *argv[]) {
 
     /* conditionally reverse input file */
     if (backwards_mode) {
-		reverse(input_data+sizeof(Header), input_data+input_size-1);
+        reverse(input_data+sizeof(Header), input_data+input_size-1);
     }
 
-	
+    
     /* generate output file */
     output_data = compress(optimize(input_data+sizeof(Header), input_size-sizeof(Header), skip), input_data+sizeof(Header), input_size-sizeof(Header), skip, &output_size, &delta);
 
     /* conditionally reverse output file */
     if (backwards_mode) {
-		reverse(output_data, output_data+output_size-1);
+        reverse(output_data, output_data+output_size-1);
     }
 
-	fill_header_and_loader((Header *)input_data, loader_data, skip, output_size, backwards_mode, delta);
+    fill_header_and_loader((Header *)input_data, loader_data, skip, output_size, backwards_mode, delta);
     
     /* write output file */
-	if (fwrite(input_data, sizeof(char), sizeof(Header), ofp) != sizeof(Header)) {
+    if (fwrite(input_data, sizeof(char), sizeof(Header), ofp) != sizeof(Header)) {
         fprintf(stderr, "Error: Cannot write output file %s\n", output_name);
         exit(1);
     }
-	if (!backwards_mode && fwrite(loader_data, sizeof(char), sizeof(loader_data), ofp) != sizeof(loader_data)) {
+    if (!backwards_mode && fwrite(loader_data, sizeof(char), sizeof(loader_data), ofp) != sizeof(loader_data)) {
         fprintf(stderr, "Error: Cannot write output file %s\n", output_name);
         exit(1);
     }
-	if (fwrite(output_data, sizeof(char), output_size, ofp) != output_size) {
+    if (fwrite(output_data, sizeof(char), output_size, ofp) != output_size) {
         fprintf(stderr, "Error: Cannot write output file %s\n", output_name);
         exit(1);
     }
-	if (backwards_mode && fwrite(loader_data, sizeof(char), sizeof(loader_data), ofp) != sizeof(loader_data)) {
+    if (backwards_mode && fwrite(loader_data, sizeof(char), sizeof(loader_data), ofp) != sizeof(loader_data)) {
         fprintf(stderr, "Error: Cannot write output file %s\n", output_name);
         exit(1);
     }
-	
+    
     /* close output file */
     fclose(ofp);
 
