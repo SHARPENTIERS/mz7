@@ -1,5 +1,5 @@
 # mz7
-MZF files compressor using ZX7 algorithm: MZF binary are turned into self-decompressing MZF binaries.
+MZF files compressor using ZX7 algorithms: MZF binary are turned into self-decompressing MZF binaries.
 
 - Windows (Visual Studio Community - Developer Command Prompt): \windows\Build.bat -> \release\mz7c.exe
 
